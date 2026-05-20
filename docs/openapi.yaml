@@ -1,0 +1,417 @@
+openapi: 3.0.3
+info:
+  title: Mertani Backend API
+  version: 1.0.0
+  description: REST API untuk manajemen Device dan Sensor IoT.
+servers:
+  - url: http://localhost:8080
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags:
+        - System
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+  /api/v1/devices:
+    post:
+      summary: Create device
+      tags:
+        - Devices
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceRequest"
+            example:
+              name: Device A
+              location: Greenhouse 1
+      responses:
+        "201":
+          description: Device created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Device"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    get:
+      summary: List devices
+      tags:
+        - Devices
+      responses:
+        "200":
+          description: Devices retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Device"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/devices/{id}:
+    get:
+      summary: Get device detail
+      tags:
+        - Devices
+      parameters:
+        - $ref: "#/components/parameters/DeviceID"
+      responses:
+        "200":
+          description: Device retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Device"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    put:
+      summary: Update device
+      tags:
+        - Devices
+      parameters:
+        - $ref: "#/components/parameters/DeviceID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeviceRequest"
+            example:
+              name: Device A Updated
+              location: Greenhouse 2
+      responses:
+        "200":
+          description: Device updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Device"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      summary: Delete device
+      tags:
+        - Devices
+      parameters:
+        - $ref: "#/components/parameters/DeviceID"
+      responses:
+        "200":
+          description: Device deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/sensors:
+    post:
+      summary: Create sensor
+      tags:
+        - Sensors
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SensorRequest"
+            example:
+              device_id: 2d7dfbb5-1f1b-4125-a6fc-d6598fc7ebd0
+              sensor_type: temperature
+              value: 28.5
+      responses:
+        "201":
+          description: Sensor created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Sensor"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    get:
+      summary: List sensors
+      tags:
+        - Sensors
+      responses:
+        "200":
+          description: Sensors retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/Sensor"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/sensors/{id}:
+    get:
+      summary: Get sensor detail
+      tags:
+        - Sensors
+      parameters:
+        - $ref: "#/components/parameters/SensorID"
+      responses:
+        "200":
+          description: Sensor retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Sensor"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    put:
+      summary: Update sensor
+      tags:
+        - Sensors
+      parameters:
+        - $ref: "#/components/parameters/SensorID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SensorRequest"
+            example:
+              device_id: 2d7dfbb5-1f1b-4125-a6fc-d6598fc7ebd0
+              sensor_type: humidity
+              value: 72.3
+      responses:
+        "200":
+          description: Sensor updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Sensor"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      summary: Delete sensor
+      tags:
+        - Sensors
+      parameters:
+        - $ref: "#/components/parameters/SensorID"
+      responses:
+        "200":
+          description: Sensor deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+components:
+  parameters:
+    DeviceID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      example: 2d7dfbb5-1f1b-4125-a6fc-d6598fc7ebd0
+    SensorID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      example: 86ff5a98-2752-4a6b-ae7b-4e19b51bba84
+  responses:
+    BadRequest:
+      description: Request tidak valid
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Data tidak ditemukan
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InternalServerError:
+      description: Error internal server
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    DeviceRequest:
+      type: object
+      required:
+        - name
+        - location
+      properties:
+        name:
+          type: string
+          example: Device A
+        location:
+          type: string
+          example: Greenhouse 1
+    Device:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 2d7dfbb5-1f1b-4125-a6fc-d6598fc7ebd0
+        name:
+          type: string
+          example: Device A
+        location:
+          type: string
+          example: Greenhouse 1
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-05-19T09:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-05-19T09:00:00Z"
+    SensorRequest:
+      type: object
+      required:
+        - device_id
+        - sensor_type
+        - value
+      properties:
+        device_id:
+          type: string
+          format: uuid
+          example: 2d7dfbb5-1f1b-4125-a6fc-d6598fc7ebd0
+        sensor_type:
+          type: string
+          example: temperature
+        value:
+          type: number
+          format: double
+          example: 28.5
+    Sensor:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 86ff5a98-2752-4a6b-ae7b-4e19b51bba84
+        device_id:
+          type: string
+          format: uuid
+          example: 2d7dfbb5-1f1b-4125-a6fc-d6598fc7ebd0
+        sensor_type:
+          type: string
+          example: temperature
+        value:
+          type: number
+          format: double
+          example: 28.5
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-05-19T09:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-05-19T09:00:00Z"
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Device retrieved successfully
+        data:
+          nullable: true
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Validation error
+        errors:
+          nullable: true
+          example:
+            name: name is required
