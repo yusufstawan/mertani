@@ -1,10 +1,12 @@
-# Studi Kasus Pengiriman Data IoT
+**Studi Kasus Pengiriman Data IoT**
 
-## Ringkasan
+---
+
+**1. Ringkasan**
 
 Sistem perlu mengirim data monitoring device IoT ke endpoint HTTP/S client sesuai jadwal. Setiap data pengiriman disimpan di database dengan status tertentu agar prosesnya bisa dilacak, diulang saat gagal, dan tidak terkirim ganda.
 
-## Alur Pengiriman Normal
+**2. Alur Pengiriman Normal**
 
 1. Scheduler berjalan secara berkala dan mengambil data berstatus `PENDING`.
 2. Data dikunci dalam transaksi lalu diubah menjadi `PROCESSING`.
@@ -15,7 +17,7 @@ Sistem perlu mengirim data monitoring device IoT ke endpoint HTTP/S client sesua
 
 Untuk mencegah data diproses lebih dari satu worker, pengambilan data dapat memakai lock database seperti `SELECT ... FOR UPDATE SKIP LOCKED`.
 
-## Flow Normal
+**3. Flow Normal**
 
 ```text
 [Scheduler]
@@ -33,7 +35,7 @@ Untuk mencegah data diproses lebih dari satu worker, pengambilan data dapat mema
 [Response 2xx?] -- ya --> [Status SENT + sent_at]
 ```
 
-## Mekanisme Retry
+**4. Mekanisme Retry**
 
 Jika pengiriman gagal karena timeout, network error, HTTP `5xx`, `408`, atau `429`, error dianggap sementara dan data boleh dicoba ulang.
 
@@ -49,7 +51,7 @@ Saat gagal sementara:
 
 Error permanen seperti HTTP `400`, `401`, `403`, dan `404` tidak di-retry otomatis karena biasanya disebabkan payload salah, credential tidak valid, akses ditolak, atau endpoint client tidak ditemukan. Data seperti ini ditandai untuk investigasi manual, misalnya dengan status `DEAD_LETTER`.
 
-## Flow Retry
+**5. Flow Retry**
 
 ```text
 [Worker kirim HTTP/S]
@@ -78,7 +80,7 @@ Error permanen seperti HTTP `400`, `401`, `403`, dan `404` tidak di-retry otomat
         [DEAD_LETTER / investigasi manual]
 ```
 
-## Field Pendukung
+**6. Field Pendukung**
 
 | Field           | Keterangan                                                                   |
 | --------------- | ---------------------------------------------------------------------------- |
@@ -94,7 +96,7 @@ Error permanen seperti HTTP `400`, `401`, `403`, dan `404` tidak di-retry otomat
 | `created_at`    | Waktu data dibuat.                                                           |
 | `updated_at`    | Waktu data diperbarui.                                                       |
 
-## Catatan Implementasi
+**7. Catatan Implementasi**
 
 - Gunakan transaksi saat mengambil dan mengubah status data menjadi `PROCESSING`.
 - Gunakan HTTP client dengan timeout.
