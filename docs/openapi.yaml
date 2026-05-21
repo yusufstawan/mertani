@@ -52,6 +52,10 @@ paths:
       summary: List devices
       tags:
         - Devices
+      parameters:
+        - $ref: "#/components/parameters/PageQuery"
+        - $ref: "#/components/parameters/LimitQuery"
+        - $ref: "#/components/parameters/SearchQuery"
       responses:
         "200":
           description: Devices retrieved successfully
@@ -63,9 +67,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: array
-                        items:
-                          $ref: "#/components/schemas/Device"
+                        $ref: "#/components/schemas/PaginatedDevices"
         "500":
           $ref: "#/components/responses/InternalServerError"
   /api/v1/devices/{id}:
@@ -93,8 +95,9 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalServerError"
-    put:
+    patch:
       summary: Update device
+      description: Update sebagian field device. Field yang tidak dikirim akan tetap memakai nilai lama.
       tags:
         - Devices
       parameters:
@@ -104,9 +107,8 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/DeviceRequest"
+              $ref: "#/components/schemas/DevicePatchRequest"
             example:
-              name: Device A Updated
               location: Greenhouse 2
       responses:
         "200":
@@ -182,6 +184,10 @@ paths:
       summary: List sensors
       tags:
         - Sensors
+      parameters:
+        - $ref: "#/components/parameters/PageQuery"
+        - $ref: "#/components/parameters/LimitQuery"
+        - $ref: "#/components/parameters/SearchQuery"
       responses:
         "200":
           description: Sensors retrieved successfully
@@ -193,9 +199,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        type: array
-                        items:
-                          $ref: "#/components/schemas/Sensor"
+                        $ref: "#/components/schemas/PaginatedSensors"
         "500":
           $ref: "#/components/responses/InternalServerError"
   /api/v1/sensors/{id}:
@@ -223,8 +227,9 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalServerError"
-    put:
+    patch:
       summary: Update sensor
+      description: Update sebagian field sensor. device_id opsional; kirim hanya jika sensor ingin dipindahkan ke device lain.
       tags:
         - Sensors
       parameters:
@@ -234,11 +239,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/SensorRequest"
+              $ref: "#/components/schemas/SensorPatchRequest"
             example:
-              device_id: 2d7dfbb5-1f1b-4125-a6fc-d6598fc7ebd0
-              sensor_type: humidity
-              value: 72.3
+              value: 29.1
       responses:
         "200":
           description: Sensor updated successfully
@@ -294,6 +297,32 @@ components:
         type: string
         format: uuid
       example: 86ff5a98-2752-4a6b-ae7b-4e19b51bba84
+    PageQuery:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      example: 1
+    LimitQuery:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+      example: 10
+    SearchQuery:
+      name: search
+      in: query
+      required: false
+      schema:
+        type: string
+      example: greenhouse
   responses:
     BadRequest:
       description: Request tidak valid
@@ -326,6 +355,16 @@ components:
         location:
           type: string
           example: Greenhouse 1
+    DevicePatchRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          example: Device A Updated
+        location:
+          type: string
+          example: Greenhouse 2
     Device:
       type: object
       properties:
@@ -347,6 +386,15 @@ components:
           type: string
           format: date-time
           example: "2026-05-19T09:00:00Z"
+    PaginatedDevices:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Device"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
     SensorRequest:
       type: object
       required:
@@ -365,6 +413,22 @@ components:
           type: number
           format: double
           example: 28.5
+    SensorPatchRequest:
+      type: object
+      minProperties: 1
+      properties:
+        device_id:
+          type: string
+          format: uuid
+          description: Opsional. Kirim hanya jika sensor ingin dipindahkan ke device lain.
+          example: 2d7dfbb5-1f1b-4125-a6fc-d6598fc7ebd0
+        sensor_type:
+          type: string
+          example: humidity
+        value:
+          type: number
+          format: double
+          example: 72.3
     Sensor:
       type: object
       properties:
@@ -391,6 +455,30 @@ components:
           type: string
           format: date-time
           example: "2026-05-19T09:00:00Z"
+    PaginatedSensors:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Sensor"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        total:
+          type: integer
+          example: 25
+        total_pages:
+          type: integer
+          example: 3
     SuccessResponse:
       type: object
       properties:

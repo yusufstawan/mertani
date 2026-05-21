@@ -8,10 +8,10 @@ type CreateSensorRequest struct {
 	Value      *float64 `json:"value" validate:"required"`
 }
 
-type UpdateSensorRequest struct {
-	DeviceID   string   `json:"device_id" validate:"required,uuid"`
-	SensorType string   `json:"sensor_type" validate:"required"`
-	Value      *float64 `json:"value" validate:"required"`
+type PatchSensorRequest struct {
+	DeviceID   *string  `json:"device_id"`
+	SensorType *string  `json:"sensor_type"`
+	Value      *float64 `json:"value"`
 }
 
 type SensorResponse struct {

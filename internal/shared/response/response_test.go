@@ -74,3 +74,20 @@ func TestErrorResponseDefaultsUnknownErrorToInternalServerError(t *testing.T) {
 		t.Fatalf("expected generic internal message, got %q", body.Message)
 	}
 }
+
+func TestNewPaginationCalculatesTotalPages(t *testing.T) {
+	pagination := NewPagination(2, 10, 25)
+
+	if pagination.Page != 2 {
+		t.Fatalf("expected page 2, got %d", pagination.Page)
+	}
+	if pagination.Limit != 10 {
+		t.Fatalf("expected limit 10, got %d", pagination.Limit)
+	}
+	if pagination.Total != 25 {
+		t.Fatalf("expected total 25, got %d", pagination.Total)
+	}
+	if pagination.TotalPages != 3 {
+		t.Fatalf("expected total pages 3, got %d", pagination.TotalPages)
+	}
+}

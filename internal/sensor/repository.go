@@ -12,10 +12,20 @@ var ErrNotFound = errors.New("sensor not found")
 
 type Repository interface {
 	Create(ctx context.Context, sensor *Sensor) error
-	FindAll(ctx context.Context) ([]Sensor, error)
+	FindAll(ctx context.Context, params ListParams) ([]Sensor, int, error)
 	FindByID(ctx context.Context, id id.ID) (Sensor, error)
 	Update(ctx context.Context, sensor *Sensor) error
 	Delete(ctx context.Context, id id.ID) error
+}
+
+type ListParams struct {
+	Page   int
+	Limit  int
+	Search string
+}
+
+func (p ListParams) Offset() int {
+	return (p.Page - 1) * p.Limit
 }
 
 type PostgresRepository struct {
@@ -47,16 +57,18 @@ func (r *PostgresRepository) Create(ctx context.Context, sensor *Sensor) error {
 	return err
 }
 
-func (r *PostgresRepository) FindAll(ctx context.Context) ([]Sensor, error) {
+func (r *PostgresRepository) FindAll(ctx context.Context, params ListParams) ([]Sensor, int, error) {
 	query := `
 		SELECT id, device_id, sensor_type, value, created_at, updated_at
 		FROM sensors
+		WHERE ($1 = '' OR sensor_type ILIKE '%' || $1 || '%' OR device_id::text ILIKE '%' || $1 || '%')
 		ORDER BY created_at DESC
+		LIMIT $2 OFFSET $3
 	`
 
-	rows, err := r.db.QueryContext(ctx, query)
+	rows, err := r.db.QueryContext(ctx, query, params.Search, params.Limit, params.Offset())
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -71,16 +83,27 @@ func (r *PostgresRepository) FindAll(ctx context.Context) ([]Sensor, error) {
 			&sensor.CreatedAt,
 			&sensor.UpdatedAt,
 		); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 
 		sensors = append(sensors, sensor)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return sensors, nil
+	countQuery := `
+		SELECT COUNT(*)
+		FROM sensors
+		WHERE ($1 = '' OR sensor_type ILIKE '%' || $1 || '%' OR device_id::text ILIKE '%' || $1 || '%')
+	`
+
+	var total int
+	if err := r.db.QueryRowContext(ctx, countQuery, params.Search).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	return sensors, total, nil
 }
 
 func (r *PostgresRepository) FindByID(ctx context.Context, id id.ID) (Sensor, error) {

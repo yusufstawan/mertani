@@ -2,6 +2,7 @@ package sensor
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 
 	"github.com/go-playground/validator/v10"
@@ -26,7 +27,7 @@ func (h *Handler) RegisterRoutes(group *echo.Group) {
 	group.POST("/sensors", h.Create)
 	group.GET("/sensors", h.FindAll)
 	group.GET("/sensors/:id", h.FindByID)
-	group.PUT("/sensors/:id", h.Update)
+	group.PATCH("/sensors/:id", h.Patch)
 	group.DELETE("/sensors/:id", h.Delete)
 }
 
@@ -45,12 +46,17 @@ func (h *Handler) Create(c *echo.Context) error {
 }
 
 func (h *Handler) FindAll(c *echo.Context) error {
-	sensors, err := h.service.FindAll(c.Request().Context())
+	params, err := parseListParams(c)
 	if err != nil {
 		return err
 	}
 
-	return response.OK(c, "Sensors retrieved successfully", ToResponses(sensors))
+	sensors, pagination, err := h.service.FindAll(c.Request().Context(), params)
+	if err != nil {
+		return err
+	}
+
+	return response.OK(c, "Sensors retrieved successfully", response.NewPaginatedData(ToResponses(sensors), pagination))
 }
 
 func (h *Handler) FindByID(c *echo.Context) error {
@@ -67,18 +73,18 @@ func (h *Handler) FindByID(c *echo.Context) error {
 	return response.OK(c, "Sensor retrieved successfully", ToResponse(sensor))
 }
 
-func (h *Handler) Update(c *echo.Context) error {
+func (h *Handler) Patch(c *echo.Context) error {
 	sensorID, err := parsePathID(c)
 	if err != nil {
 		return err
 	}
 
-	var request UpdateSensorRequest
+	var request PatchSensorRequest
 	if err := bindAndValidate(c, &request); err != nil {
 		return err
 	}
 
-	sensor, err := h.service.Update(c.Request().Context(), sensorID, request)
+	sensor, err := h.service.Patch(c.Request().Context(), sensorID, request)
 	if err != nil {
 		return err
 	}
@@ -97,6 +103,44 @@ func (h *Handler) Delete(c *echo.Context) error {
 	}
 
 	return response.OK(c, "Sensor deleted successfully", nil)
+}
+
+func parseListParams(c *echo.Context) (ListParams, error) {
+	page, err := parsePositiveQueryInt(c.QueryParam("page"), 1, "page")
+	if err != nil {
+		return ListParams{}, err
+	}
+
+	limit, err := parsePositiveQueryInt(c.QueryParam("limit"), 10, "limit")
+	if err != nil {
+		return ListParams{}, err
+	}
+	if limit > 100 {
+		return ListParams{}, apperror.BadRequest("Invalid query parameter", map[string]string{
+			"limit": "limit must be less than or equal to 100",
+		})
+	}
+
+	return ListParams{
+		Page:   page,
+		Limit:  limit,
+		Search: strings.TrimSpace(c.QueryParam("search")),
+	}, nil
+}
+
+func parsePositiveQueryInt(value string, defaultValue int, field string) (int, error) {
+	if value == "" {
+		return defaultValue, nil
+	}
+
+	parsedValue, err := strconv.Atoi(value)
+	if err != nil || parsedValue < 1 {
+		return 0, apperror.BadRequest("Invalid query parameter", map[string]string{
+			field: field + " must be a positive number",
+		})
+	}
+
+	return parsedValue, nil
 }
 
 func bindAndValidate(c *echo.Context, request any) error {

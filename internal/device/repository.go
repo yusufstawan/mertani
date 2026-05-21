@@ -12,10 +12,20 @@ var ErrNotFound = errors.New("device not found")
 
 type Repository interface {
 	Create(ctx context.Context, device *Device) error
-	FindAll(ctx context.Context) ([]Device, error)
+	FindAll(ctx context.Context, params ListParams) ([]Device, int, error)
 	FindByID(ctx context.Context, id id.ID) (Device, error)
 	Update(ctx context.Context, device *Device) error
 	Delete(ctx context.Context, id id.ID) error
+}
+
+type ListParams struct {
+	Page   int
+	Limit  int
+	Search string
+}
+
+func (p ListParams) Offset() int {
+	return (p.Page - 1) * p.Limit
 }
 
 type PostgresRepository struct {
@@ -46,16 +56,18 @@ func (r *PostgresRepository) Create(ctx context.Context, device *Device) error {
 	return err
 }
 
-func (r *PostgresRepository) FindAll(ctx context.Context) ([]Device, error) {
+func (r *PostgresRepository) FindAll(ctx context.Context, params ListParams) ([]Device, int, error) {
 	query := `
 		SELECT id, name, location, created_at, updated_at
 		FROM devices
+		WHERE ($1 = '' OR name ILIKE '%' || $1 || '%' OR location ILIKE '%' || $1 || '%')
 		ORDER BY created_at DESC
+		LIMIT $2 OFFSET $3
 	`
 
-	rows, err := r.db.QueryContext(ctx, query)
+	rows, err := r.db.QueryContext(ctx, query, params.Search, params.Limit, params.Offset())
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
@@ -69,16 +81,27 @@ func (r *PostgresRepository) FindAll(ctx context.Context) ([]Device, error) {
 			&device.CreatedAt,
 			&device.UpdatedAt,
 		); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 
 		devices = append(devices, device)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return devices, nil
+	countQuery := `
+		SELECT COUNT(*)
+		FROM devices
+		WHERE ($1 = '' OR name ILIKE '%' || $1 || '%' OR location ILIKE '%' || $1 || '%')
+	`
+
+	var total int
+	if err := r.db.QueryRowContext(ctx, countQuery, params.Search).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	return devices, total, nil
 }
 
 func (r *PostgresRepository) FindByID(ctx context.Context, id id.ID) (Device, error) {

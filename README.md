@@ -78,23 +78,28 @@ http://localhost:8080/swagger
 
 ## Endpoint Device
 
-| Method   | Endpoint              | Keterangan               |
-| -------- | --------------------- | ------------------------ |
-| `POST`   | `/api/v1/devices`     | Membuat device.          |
-| `GET`    | `/api/v1/devices`     | Mengambil daftar device. |
-| `GET`    | `/api/v1/devices/:id` | Mengambil detail device. |
-| `PUT`    | `/api/v1/devices/:id` | Mengubah device.         |
-| `DELETE` | `/api/v1/devices/:id` | Menghapus device.        |
+| Method   | Endpoint              | Keterangan                                  |
+| -------- | --------------------- | ------------------------------------------- |
+| `POST`   | `/api/v1/devices`     | Membuat device.                             |
+| `GET`    | `/api/v1/devices`     | Mengambil daftar device dengan pagination.  |
+| `GET`    | `/api/v1/devices/:id` | Mengambil detail device.                    |
+| `PATCH`  | `/api/v1/devices/:id` | Mengubah sebagian field device.             |
+| `DELETE` | `/api/v1/devices/:id` | Menghapus device.                           |
+
+Query list: `page`, `limit`, `search`. Contoh: `/api/v1/devices?page=1&limit=10&search=greenhouse`.
 
 ## Endpoint Sensor
 
-| Method   | Endpoint              | Keterangan               |
-| -------- | --------------------- | ------------------------ |
-| `POST`   | `/api/v1/sensors`     | Membuat sensor.          |
-| `GET`    | `/api/v1/sensors`     | Mengambil daftar sensor. |
-| `GET`    | `/api/v1/sensors/:id` | Mengambil detail sensor. |
-| `PUT`    | `/api/v1/sensors/:id` | Mengubah sensor.         |
-| `DELETE` | `/api/v1/sensors/:id` | Menghapus sensor.        |
+| Method   | Endpoint              | Keterangan                                  |
+| -------- | --------------------- | ------------------------------------------- |
+| `POST`   | `/api/v1/sensors`     | Membuat sensor.                             |
+| `GET`    | `/api/v1/sensors`     | Mengambil daftar sensor dengan pagination.  |
+| `GET`    | `/api/v1/sensors/:id` | Mengambil detail sensor.                    |
+| `PATCH`  | `/api/v1/sensors/:id` | Mengubah sebagian field sensor.             |
+| `DELETE` | `/api/v1/sensors/:id` | Menghapus sensor.                           |
+
+Query list: `page`, `limit`, `search`. Contoh: `/api/v1/sensors?page=1&limit=10&search=temperature`.
+Untuk `PATCH /api/v1/sensors/:id`, `device_id` tidak wajib dikirim. Kirim `device_id` hanya jika sensor ingin dipindahkan ke device lain.
 
 ## Makefile Commands
 

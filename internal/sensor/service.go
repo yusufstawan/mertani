@@ -9,6 +9,7 @@ import (
 	"mertani/internal/device"
 	"mertani/internal/shared/apperror"
 	"mertani/internal/shared/id"
+	"mertani/internal/shared/response"
 )
 
 type Service struct {
@@ -46,13 +47,13 @@ func (s *Service) Create(ctx context.Context, request CreateSensorRequest) (Sens
 	return sensor, nil
 }
 
-func (s *Service) FindAll(ctx context.Context) ([]Sensor, error) {
-	sensors, err := s.repository.FindAll(ctx)
+func (s *Service) FindAll(ctx context.Context, params ListParams) ([]Sensor, response.Pagination, error) {
+	sensors, total, err := s.repository.FindAll(ctx, params)
 	if err != nil {
-		return nil, apperror.Internal(err)
+		return nil, response.Pagination{}, apperror.Internal(err)
 	}
 
-	return sensors, nil
+	return sensors, response.NewPagination(params.Page, params.Limit, total), nil
 }
 
 func (s *Service) FindByID(ctx context.Context, sensorID id.ID) (Sensor, error) {
@@ -67,19 +68,68 @@ func (s *Service) FindByID(ctx context.Context, sensorID id.ID) (Sensor, error) 
 	return sensor, nil
 }
 
-func (s *Service) Update(ctx context.Context, sensorID id.ID, request UpdateSensorRequest) (Sensor, error) {
-	sensorInput, err := s.validateInput(ctx, request.DeviceID, request.SensorType, request.Value)
-	if err != nil {
-		return Sensor{}, err
+func (s *Service) Patch(ctx context.Context, sensorID id.ID, request PatchSensorRequest) (Sensor, error) {
+	validationErrors := make(map[string]string)
+	hasUpdate := false
+
+	var deviceID id.ID
+	hasDeviceUpdate := false
+	if request.DeviceID != nil {
+		*request.DeviceID = strings.TrimSpace(*request.DeviceID)
+		hasUpdate = true
+		hasDeviceUpdate = true
+		if *request.DeviceID == "" {
+			validationErrors["device_id"] = "device_id is required"
+		} else {
+			parsedDeviceID, err := id.Parse(*request.DeviceID)
+			if err != nil {
+				validationErrors["device_id"] = "device_id must be a valid UUID"
+			} else {
+				deviceID = parsedDeviceID
+			}
+		}
 	}
 
-	sensor := Sensor{
-		ID:         sensorID,
-		DeviceID:   sensorInput.deviceID,
-		SensorType: sensorInput.sensorType,
-		Value:      sensorInput.value,
-		UpdatedAt:  time.Now().UTC(),
+	if request.SensorType != nil {
+		*request.SensorType = strings.TrimSpace(*request.SensorType)
+		hasUpdate = true
+		if *request.SensorType == "" {
+			validationErrors["sensor_type"] = "sensor_type is required"
+		}
 	}
+	if request.Value != nil {
+		hasUpdate = true
+	}
+	if !hasUpdate {
+		validationErrors["body"] = "at least one field is required"
+	}
+	if len(validationErrors) > 0 {
+		return Sensor{}, apperror.BadRequest("Validation error", validationErrors)
+	}
+
+	sensor, err := s.repository.FindByID(ctx, sensorID)
+	if errors.Is(err, ErrNotFound) {
+		return Sensor{}, apperror.NotFound("Sensor not found")
+	}
+	if err != nil {
+		return Sensor{}, apperror.Internal(err)
+	}
+
+	if hasDeviceUpdate {
+		if _, err := s.deviceRepository.FindByID(ctx, deviceID); errors.Is(err, device.ErrNotFound) {
+			return Sensor{}, apperror.NotFound("Device not found")
+		} else if err != nil {
+			return Sensor{}, apperror.Internal(err)
+		}
+		sensor.DeviceID = deviceID
+	}
+	if request.SensorType != nil {
+		sensor.SensorType = *request.SensorType
+	}
+	if request.Value != nil {
+		sensor.Value = *request.Value
+	}
+	sensor.UpdatedAt = time.Now().UTC()
 
 	if err := s.repository.Update(ctx, &sensor); errors.Is(err, ErrNotFound) {
 		return Sensor{}, apperror.NotFound("Sensor not found")

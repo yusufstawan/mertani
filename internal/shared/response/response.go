@@ -24,6 +24,18 @@ type Body struct {
 	Errors  any    `json:"errors,omitempty"`
 }
 
+type Pagination struct {
+	Page       int `json:"page"`
+	Limit      int `json:"limit"`
+	Total      int `json:"total"`
+	TotalPages int `json:"total_pages"`
+}
+
+type PaginatedData struct {
+	Items      any        `json:"items"`
+	Pagination Pagination `json:"pagination"`
+}
+
 func Success(message string, data any) Body {
 	return Body{
 		Success: true,
@@ -37,6 +49,27 @@ func Error(message string, errors any) Body {
 		Success: false,
 		Message: message,
 		Errors:  errors,
+	}
+}
+
+func NewPagination(page int, limit int, total int) Pagination {
+	totalPages := 0
+	if limit > 0 {
+		totalPages = (total + limit - 1) / limit
+	}
+
+	return Pagination{
+		Page:       page,
+		Limit:      limit,
+		Total:      total,
+		TotalPages: totalPages,
+	}
+}
+
+func NewPaginatedData(items any, pagination Pagination) PaginatedData {
+	return PaginatedData{
+		Items:      items,
+		Pagination: pagination,
 	}
 }
 

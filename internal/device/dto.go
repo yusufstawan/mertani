@@ -7,9 +7,9 @@ type CreateDeviceRequest struct {
 	Location string `json:"location" validate:"required"`
 }
 
-type UpdateDeviceRequest struct {
-	Name     string `json:"name" validate:"required"`
-	Location string `json:"location" validate:"required"`
+type PatchDeviceRequest struct {
+	Name     *string `json:"name"`
+	Location *string `json:"location"`
 }
 
 type DeviceResponse struct {
